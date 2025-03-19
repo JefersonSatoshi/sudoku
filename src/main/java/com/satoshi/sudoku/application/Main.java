@@ -1,5 +1,6 @@
 package com.satoshi.sudoku.application;
 
+import com.satoshi.sudoku.util.SudokuGridUtil;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -35,7 +36,6 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
-
         launch(args);
     }
 }

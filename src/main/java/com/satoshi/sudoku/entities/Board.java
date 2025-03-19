@@ -12,12 +12,13 @@ public class Board {
     private void initializeEmptyBoard() {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
-                grid[row][col] = new Cell(null); // começa com null
+                grid[col][row] = new Cell(0, false); // começa com null
             }
         }
+        System.out.println("board inicializado");
     }
 
-    public void setCellValue(Integer value, int row, int col, boolean isFixed) {
+    public void setCellValue(int col, int row, Integer value, boolean isFixed) {
         grid[row][col].setValue(value);
         grid[row][col].setFixed(isFixed);
     }
@@ -52,20 +53,37 @@ public class Board {
         for (String arg : args) {
             String[] parts = arg.split(";");
             String[] coords = parts[0].split(",");
-            int row = Integer.parseInt(coords[0]);
-            int col = Integer.parseInt(coords[1]);
-            int value = Integer.parseInt(parts[1]);
-            boolean isFixed = Boolean.parseBoolean(parts[2]);
-            setCellValue(row, col, value, isFixed);
+            int col = Integer.parseInt(coords[0]);
+            int row = Integer.parseInt(coords[1]);
+
+            // Correção: separar o valor do booleano
+            String[] valueAndState = parts[1].split(",");
+            int value = Integer.parseInt(valueAndState[0]); // O número da célula
+            boolean isFixed = Boolean.parseBoolean(valueAndState[1]); // Se é fixo ou não
+
+            if (isFixed) {
+                setCellValue(col, row, value, isFixed);
+            } else {
+                setCellValue(col, row, 0, isFixed);
+            }
         }
     }
 
-    public void printBoard() {
+    public boolean clearValue(int row, int col){
+        var cell = grid[col][row];
+        if (cell.isFixed()){
+            return false;
+        }
+
+        cell.clearCell();
+        return true;
+    }
+
+    public void reset() {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
-                System.out.print(grid[row][col].getValue() + " ");
+                    grid[row][col].clearCell();
             }
-            System.out.println();
         }
     }
 }
