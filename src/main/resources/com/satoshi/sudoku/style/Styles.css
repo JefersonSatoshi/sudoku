@@ -1,0 +1,62 @@
+#box-main {
+    -fx-background-color: #ddd;
+}
+.grid-main {
+    -fx-border-color: black;
+    -fx-border-width: 2;
+    -fx-border-style: solid;
+    -fx-hgap: 2;
+    -fx-vgap: 2;
+}
+
+.sub-grid {
+    -fx-background-color: #fff;
+    -fx-grid-lines-visible: true;
+    -fx-border-color: black;
+    -fx-border-width: 1;
+    -fx-border-style: solid;
+}
+
+.sub-grid .button {
+    -fx-font-size: 20px;
+    -fx-font-family: "Arial";
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0.5;
+}
+
+.sub-grid .button:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+    -fx-background-insets: 0.5;
+}
+
+.sub-grid .button:focused {
+    -fx-background-color: rgba(0, 0, 0, 0.6);
+    -fx-background-insets: 0.5;
+}
+
+.box-button-numeric {
+    -fx-background-color: rgba(0, 0, 0, 0.3);
+}
+
+.button-numeric,
+.button-option {
+    -fx-border-color: #000;
+    -fx-border-width: 1px;
+    -fx-effect: none;
+    -fx-background-color: #fff;
+    -fx-background-insets: 0;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.button-numeric:hover,
+.button-option:hover {
+    -fx-background-color: rgba(0, 0, 0, 0.5);
+    -fx-background-insets: 0.5;
+    -fx-text-fill: #fff;
+}
+
