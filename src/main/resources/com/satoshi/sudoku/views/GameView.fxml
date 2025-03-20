@@ -25,7 +25,7 @@
             </Pane>
             <Pane prefHeight="20.0" prefWidth="200.0">
                <children>
-                  <Label layoutY="2.0" text="Erros: 0 / 3" />
+                  <Label fx:id="errorLabel" layoutY="2.0" text="Erros: 0 / 3" />
                </children>
             </Pane>
             <GridPane fx:id="gridPane" styleClass="grid-main" VBox.vgrow="ALWAYS">

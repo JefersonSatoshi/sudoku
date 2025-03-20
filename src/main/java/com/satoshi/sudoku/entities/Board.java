@@ -12,7 +12,7 @@ public class Board {
     private void initializeEmptyBoard() {
         for (int row = 0; row < 9; row++) {
             for (int col = 0; col < 9; col++) {
-                grid[col][row] = new Cell(0, false); // começa com null
+                grid[col][row] = new Cell(0, false);
             }
         }
         System.out.println("board inicializado");
@@ -58,8 +58,8 @@ public class Board {
 
             // Correção: separar o valor do booleano
             String[] valueAndState = parts[1].split(",");
-            int value = Integer.parseInt(valueAndState[0]); // O número da célula
-            boolean isFixed = Boolean.parseBoolean(valueAndState[1]); // Se é fixo ou não
+            int value = Integer.parseInt(valueAndState[0]);
+            boolean isFixed = Boolean.parseBoolean(valueAndState[1]);
 
             if (isFixed) {
                 setCellValue(col, row, value, isFixed);

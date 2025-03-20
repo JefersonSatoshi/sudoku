@@ -22,6 +22,9 @@ public class GameViewController implements Initializable {
     private Cell selectedCell;
     private Map<Cell, Button> cellButtonMap = new HashMap<>();
     private boolean draftMode = false;
+    private int errorCount = 0;
+    private final int maxErrors = 3;
+    private Set<String> cellsWithError = new HashSet<>();
 
     @FXML
     protected GridPane gridPane;
@@ -29,6 +32,8 @@ public class GameViewController implements Initializable {
     private Button btRestart, btClear, btNote, btFinish;
     @FXML
     private Button btOne, btTwo, btThree, btFour, btFive, btSix, btSeven, btEight, btNine;
+    @FXML
+    private Label errorLabel;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -69,7 +74,9 @@ public class GameViewController implements Initializable {
 
         gridUtil = new SudokuGridUtil(board, this, cellButtonMap);
         gridUtil.populateSudokuGrid(gridPane);
-        updateAllCellStyles(); // Garante que os números fixos apareçam de primeira
+        updateAllCellStyles();
+
+        errorLabel.setText("Erros: " + errorCount + "/" + maxErrors);
 
         btOne.setOnAction(e -> insertNumber(1));
         btTwo.setOnAction(e -> insertNumber(2));
@@ -87,6 +94,11 @@ public class GameViewController implements Initializable {
         Optional<ButtonType> result = Alerts.showConfirmation("Confirmar", "Deseja Reiniciar o jogo?");
         if (result.get() == ButtonType.OK) {
             model.reset();
+
+            errorCount = 0;
+            cellsWithError.clear();
+            errorLabel.setText("Erros: " + errorCount + "/" + maxErrors);
+
             selectedCell = null;
             draftMode = false;
             btNote.setStyle("");
@@ -117,8 +129,14 @@ public class GameViewController implements Initializable {
     @FXML
     public void onBtClear() {
         if (selectedCell != null && !selectedCell.isFixed()) {
+            int row = getRowOfCell(selectedCell);
+            int col = getColOfCell(selectedCell);
+            String cellKey = row + "," + col;
+
             selectedCell.clearDrafts();
             selectedCell.setValue(null);
+            selectedCell.setLocked(false);
+            cellsWithError.remove(cellKey);
             updateAllCellStyles();
         }
     }
@@ -140,20 +158,42 @@ public class GameViewController implements Initializable {
 
     public void selectCell(int row, int col) {
         selectedCell = model.getBoard().getCell(row, col);
+        updateAllCellStyles();
         updateCellHighlighting();
     }
 
     public void insertNumber(int value) {
-        if (selectedCell != null && !selectedCell.isFixed()) {
+        if (selectedCell != null && !selectedCell.isFixed() && !selectedCell.isLocked()) {
             int row = getRowOfCell(selectedCell);
             int col = getColOfCell(selectedCell);
+            String cellKey = row + "," + col;
+
+            cellsWithError.remove(cellKey);
+
+            Cell cell = model.getBoard().getCell(row, col);
+
             if (draftMode) {
-                model.getBoard().getCell(row, col).addDraft(value);
+                cell.addDraft(value);
             } else {
-                selectedCell.clearDrafts();
+                cell.clearDrafts();
                 updateAllCellStyles();
-                selectedCell.setValue(value); // Atualiza o estado da célula localmente
-                model.setValue(row, col, value);
+                cell.setValue(value);
+                boolean matchesSolution = model.matchesSolution(row, col, value);
+                if (matchesSolution) {
+                    cell.setLocked(true);
+                } else {
+                    cell.setLocked(false);
+                    if (!cellsWithError.contains(cellKey)) {
+                        errorCount++;
+                        cellsWithError.add(cellKey);
+                        errorLabel.setText("Erros: " + errorCount + "/" + maxErrors);
+                        if (errorCount >= maxErrors) {
+                            Alerts.showAlert("Você Perdeu!", null, "Você atingiu o limite de erros (" + maxErrors + "). O jogo terminou!", Alert.AlertType.ERROR);
+                            disableOrEnableGameControls(true);
+                            return;
+                        }
+                    }
+                }
             }
             updateAllCellStyles();
             updateCellHighlighting();
@@ -161,6 +201,28 @@ public class GameViewController implements Initializable {
     }
 
     private void updateAllCellStyles() {
+        int selectedRow = -1, selectedCol = -1;
+        String selectedCellKey = null;
+        List<Cell> selectedCellConflicts = null;
+
+        if (selectedCell != null) {
+            selectedRow = getRowOfCell(selectedCell);
+            selectedCol = getColOfCell(selectedCell);
+            selectedCellKey = selectedRow + "," + selectedCol;
+            Integer selectedValue = selectedCell.getValue();
+            if (selectedValue != null && selectedValue != 0) {
+                selectedCellConflicts = model.getConflictingCells(selectedRow, selectedCol, selectedValue);
+            }
+        }
+
+        for (Map.Entry<Cell, Button> entry : cellButtonMap.entrySet()) {
+            Button button = entry.getValue();
+            button.setStyle("");
+            button.setText("");
+            button.setGraphic(null);
+            button.setContentDisplay(ContentDisplay.TEXT_ONLY);
+        }
+
         for (int r = 0; r < 9; r++) {
             for (int c = 0; c < 9; c++) {
                 Cell cell = model.getBoard().getCell(r, c);
@@ -168,60 +230,82 @@ public class GameViewController implements Initializable {
                 if (button == null) continue;
 
                 Integer value = cell.getValue();
+                String cellKey = r + "," + c;
+
                 if (value != null && value != 0) {
                     button.setText(String.valueOf(value));
                     button.setGraphic(null);
+                    button.setContentDisplay(ContentDisplay.TEXT_ONLY);
+
                     List<Cell> conflicts = model.getConflictingCells(r, c, value);
-                    if (!conflicts.isEmpty() || !model.matchesSolution(r, c, value)) {
-                        button.setStyle("-fx-background-color: rgba(255, 0, 0, 0.8); -fx-background-insets: 0.5;");
+                    boolean matchesSolution = model.matchesSolution(r, c, value);
+                    boolean isSelectedCell = cellKey.equals(selectedCellKey);
+                    boolean hasError = !conflicts.isEmpty() || !matchesSolution;
+                    boolean isInConflictWithSelected = selectedCellConflicts != null && selectedCellConflicts.contains(cell);
+
+                    String textColor = "-fx-text-fill: black;";
+                    if (cell.isFixed()) {
+                        textColor = "-fx-text-fill: black;";
                     } else {
-                        cell.setLocked(true);
-                        button.setStyle("");
-                    }
-                } else if (!cell.getDrafts().isEmpty()) {
-                    GridPane draftGrid = new GridPane();
-                    draftGrid.setAlignment(Pos.CENTER);
-                    draftGrid.setPadding(new Insets(1, 1, 1, 1)); // Padding interno
-                    draftGrid.setPrefSize(20, 20); // Define o tamanho preferencial
-                    draftGrid.setMinSize(20, 20); // Garante o tamanho mínimo
-
-                    // Define 3 colunas e 3 linhas com 33.3% cada, centralizadas
-                    for (int i = 0; i < 3; i++) {
-                        ColumnConstraints col = new ColumnConstraints();
-                        col.setPercentWidth(33.3);
-                        col.setHalignment(HPos.CENTER); // Centraliza horizontalmente
-                        draftGrid.getColumnConstraints().add(col);
-
-                        RowConstraints row = new RowConstraints();
-                        row.setPercentHeight(33.3);
-                        row.setValignment(VPos.CENTER); // Centraliza verticalmente
-                        draftGrid.getRowConstraints().add(row);
-                    }
-
-                    for (int draft : cell.getDrafts()) {
-                        Text draftText = new Text(String.valueOf(draft));
-                        draftText.setStyle("-fx-font-size: 12px;"); // Fonte 10px como tu pediu
-                        switch (draft) {
-                            case 1: draftGrid.add(draftText, 0, 0); break; // Superior esquerdo
-                            case 2: draftGrid.add(draftText, 1, 0); break; // Superior centro
-                            case 3: draftGrid.add(draftText, 2, 0); break; // Superior direito
-                            case 4: draftGrid.add(draftText, 0, 1); break; // Centro esquerdo
-                            case 5: draftGrid.add(draftText, 1, 1); break; // Centro
-                            case 6: draftGrid.add(draftText, 2, 1); break; // Centro direito
-                            case 7: draftGrid.add(draftText, 0, 2); break; // Inferior esquerdo
-                            case 8: draftGrid.add(draftText, 1, 2); break; // Inferior centro
-                            case 9: draftGrid.add(draftText, 2, 2); break; // Inferior direito
+                        if (matchesSolution) {
+                            textColor = "-fx-text-fill: blue;";
+                        } else {
+                            textColor = "-fx-text-fill: #FF0000;";
                         }
                     }
-                    button.setText("");
-                    button.setGraphic(draftGrid);
-                    button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY); // Garante que o graphic não afete o texto
-                    button.setStyle("");
+
+                    String backgroundColor = "";
+                    if (hasError && (isSelectedCell || isInConflictWithSelected)) {
+                        backgroundColor = "-fx-background-color: rgba(255, 0, 0, 0.4); -fx-background-insets: 0.5;";
+                    }
+
+                    button.setStyle(backgroundColor + textColor);
                 } else {
-                    button.setText("");
-                    button.setGraphic(null);
-                    button.setContentDisplay(ContentDisplay.CENTER); // Volta pro padrão
-                    button.setStyle("");
+                    if (!cell.getDrafts().isEmpty()) {
+                        GridPane draftGrid = new GridPane();
+                        draftGrid.setAlignment(Pos.CENTER);
+                        draftGrid.setPadding(new Insets(1, 1, 1, 1));
+                        draftGrid.setPrefSize(20, 20);
+                        draftGrid.setMinSize(20, 20);
+
+                        for (int i = 0; i < 3; i++) {
+                            ColumnConstraints col = new ColumnConstraints();
+                            col.setPercentWidth(33.3);
+                            col.setHalignment(HPos.CENTER);
+                            draftGrid.getColumnConstraints().add(col);
+
+                            RowConstraints row = new RowConstraints();
+                            row.setPercentHeight(33.3);
+                            row.setValignment(VPos.CENTER);
+                            draftGrid.getRowConstraints().add(row);
+                        }
+
+                        for (int draft : cell.getDrafts()) {
+                            Text draftText = new Text(String.valueOf(draft));
+                            draftText.setStyle("-fx-font-size: 12px;");
+                            switch (draft) {
+                                case 1: draftGrid.add(draftText, 0, 0); break;
+                                case 2: draftGrid.add(draftText, 1, 0); break;
+                                case 3: draftGrid.add(draftText, 2, 0); break;
+                                case 4: draftGrid.add(draftText, 0, 1); break;
+                                case 5: draftGrid.add(draftText, 1, 1); break;
+                                case 6: draftGrid.add(draftText, 2, 1); break;
+                                case 7: draftGrid.add(draftText, 0, 2); break;
+                                case 8: draftGrid.add(draftText, 1, 2); break;
+                                case 9: draftGrid.add(draftText, 2, 2); break;
+                            }
+                        }
+                        button.setText("");
+                        button.setGraphic(draftGrid);
+                        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+                        button.setStyle("");
+                    } else {
+                        button.setText("");
+                        button.setGraphic(null);
+                        button.setContentDisplay(ContentDisplay.CENTER);
+                        button.setStyle("");
+                    }
+                    cellsWithError.remove(cellKey);
                 }
             }
         }
@@ -229,7 +313,7 @@ public class GameViewController implements Initializable {
 
     private void updateCellHighlighting() {
         if (selectedCell == null) {
-            return; // Não reseta estilos aqui pra manter os vermelhos
+            return;
         }
 
         int selectedRow = getRowOfCell(selectedCell);
@@ -241,16 +325,13 @@ public class GameViewController implements Initializable {
             int row = getRowOfCell(cell);
             int col = getColOfCell(cell);
 
-            // Só aplica destaque se não tiver vermelho
             String currentStyle = button.getStyle();
-            if (!currentStyle.contains("rgba(255, 0, 0, 0.8)")) {
+            if (!currentStyle.contains("rgba(255, 0, 0, 0.4)")) {
                 if (cell == selectedCell) {
-                    button.setStyle("-fx-background-color: rgba(0, 0, 0, 0.1);");
+                    button.setStyle(currentStyle + "-fx-background-color: rgba(0, 0, 0, 0.1);");
                 } else if (row == selectedRow || col == selectedCol ||
                         (row / 3 == selectedRow / 3 && col / 3 == selectedCol / 3)) {
-                    button.setStyle("-fx-background-color: rgba(0, 0, 0, 0.2);");
-                } else {
-                    button.setStyle("");
+                    button.setStyle(currentStyle + "-fx-background-color: rgba(0, 0, 0, 0.2);");
                 }
             }
         }
