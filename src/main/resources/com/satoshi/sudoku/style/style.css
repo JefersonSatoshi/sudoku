@@ -1,6 +1,7 @@
 #box-main {
     -fx-background-color: #ddd;
 }
+
 .grid-main {
     -fx-border-color: black;
     -fx-border-width: 2;
@@ -8,11 +9,21 @@
     -fx-hgap: 2;
     -fx-vgap: 2;
 }
+/*
+.grid-main .button {
+    -fx-font-size: 20px;
+    -fx-font-family: "Arial";
+    -fx-font-weight: bold;
+    -fx-border-color: transparent;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0.5;
+}*/
 
 .sub-grid {
     -fx-background-color: #fff;
     -fx-grid-lines-visible: true;
-    -fx-border-color: black;
+    -fx-border-color: #000;
     -fx-border-width: 1;
     -fx-border-style: solid;
 }
@@ -20,7 +31,6 @@
 .sub-grid .button {
     -fx-font-size: 20px;
     -fx-font-family: "Arial";
-    -fx-text-fill: #000000;
     -fx-font-weight: bold;
     -fx-border-color: transparent;
     -fx-background-color: transparent;
@@ -33,13 +43,37 @@
     -fx-background-insets: 0.5;
 }
 
-.sub-grid .button:focused {
-    -fx-background-color: rgba(0, 0, 0, 0.6);
+.sub-grid .cell-fixed {
+    -fx-text-fill: #000;
+}
+
+.sub-grid .cell-correct {
+    -fx-text-fill: #00f;
+}
+
+.sub-grid .cell-error {
+    -fx-text-fill: #f00;
+}
+
+.sub-grid .cell-error-highlighted {
+    -fx-background-color: rgba(255, 0, 0, 0.4) !important;
     -fx-background-insets: 0.5;
+}
+
+.sub-grid .cell-selected {
+    -fx-background-color: rgba(0, 0, 0, 0.1);
+}
+
+.sub-grid .cell-highlighted {
+    -fx-background-color: rgba(0, 0, 0, 0.2);
 }
 
 .box-button-numeric {
     -fx-background-color: rgba(0, 0, 0, 0.3);
+}
+
+.button-note {
+    -fx-background-color: rgba(0, 255, 0, 0.5) !important;
 }
 
 .button-numeric,
@@ -56,7 +90,9 @@
 .button-numeric:hover,
 .button-option:hover {
     -fx-background-color: rgba(0, 0, 0, 0.5);
-    -fx-background-insets: 0.5;
     -fx-text-fill: #fff;
 }
 
+.drafts {
+    -fx-font-size: 12px;
+}

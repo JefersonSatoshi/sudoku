@@ -15,7 +15,6 @@ public class Board {
                 grid[col][row] = new Cell(0, false);
             }
         }
-        System.out.println("board inicializado");
     }
 
     public void setCellValue(int col, int row, Integer value, boolean isFixed) {
